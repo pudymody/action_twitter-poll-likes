@@ -1,0 +1,21 @@
+name: 'Twitter-Poller_Likes'
+description: 'Poll for new likes and write them to a hugo content file.'
+author: 'pudymody'
+inputs:
+  base:
+    description: 'Path where to write content files. Relative to content folder.'
+    required: false
+    default: './content'
+  token:
+    description: 'Twitter token to use the api'
+    required: true
+  user:
+    description: 'Twitter user where to get data'
+    required: true
+  count:
+    description: 'How many tweets to get'
+    required: false
+    default: 50
+runs:
+  using: 'node12'
+  main: 'index.js'
