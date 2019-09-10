@@ -14,20 +14,19 @@ const COUNT = process.env.INPUT_COUNT;
 		count: COUNT,
 	};
 
-	let LAST_TWEET_LIKE;
+	let LAST_TWEET_LIKE = new Set();
 
 	try {
 		LAST_TWEET_LIKE = await fs.promises.readFile("LAST_TWEET_LIKE", "utf8");
 		if( LAST_TWEET_LIKE !== "" ){
-			query.since_id = LAST_TWEET_LIKE;
+			LAST_TWEET_LIKE = JSON.parse(LAST_TWEET_LIKE);
+			LAST_TWEET_LIKE = new Set(LAST_TWEET_LIKE);
 		}
 	} catch (error) {
 		if( error.code != "ENOENT" ){
 			throw error;
 		}
 	}
-
-	let LAST_TWEET_CREATED_AT = 0;
 
 	let new_tweets = await got("https://api.twitter.com/1.1/favorites/list.json", {
 		method: "GET",
@@ -38,7 +37,7 @@ const COUNT = process.env.INPUT_COUNT;
 		json: true
 	}).then( ({body}) => body );
 
-	new_tweets = new_tweets.map( tw => {
+	let tweets_to_process = new_tweets.map( tw => {
 		tw.frontMatter = {
 			date: tw.created_at,
 			layout: "like",
@@ -48,25 +47,20 @@ const COUNT = process.env.INPUT_COUNT;
 		}
 
 		return tw;
-	});
+	}).filter( tw => !LAST_TWEET_LIKE.has(tw.id_str) );
 
-	console.log(`Got ${new_tweets.length} new tweets.`);
-	for(let item of new_tweets){
+	console.log(`Got ${tweets_to_process.length} new tweets.`);
+	for(let item of tweets_to_process){
 		let name = "like_" + item.id_str + ".md";
 
 		content = "---\n";
 		content += yaml.safeDump(item.frontMatter);
 		content += "---\n";
-		content += item.text;
-
-		if( LAST_TWEET_CREATED_AT < new Date(item.created_at) ){
-			LAST_TWEET_CREATED_AT = new Date(item.created_at);
-			LAST_TWEET_LIKE = item.id_str;
-		}
 
 		console.log("Wrote a new file");
 		await fs.promises.writeFile( path.join("content",BASE,name), content);
 	}
 
-	await fs.promises.writeFile("LAST_TWEET_LIKE", LAST_TWEET_LIKE);
+	LAST_TWEET_LIKE = new_tweets.map( tw => tw.id_str );
+	await fs.promises.writeFile("LAST_TWEET_LIKE", JSON.stringify(LAST_TWEET_LIKE));
 })();
