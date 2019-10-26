@@ -1,5 +1,4 @@
 const fs = require("fs");
-const path = require("path");
 const yaml = require("js-yaml");
 const got = require("got");
 
@@ -37,29 +36,19 @@ const COUNT = process.env.INPUT_COUNT;
 		json: true
 	}).then( ({body}) => body );
 
-	let tweets_to_process = new_tweets.map( tw => {
-		tw.frontMatter = {
+	let tweets_to_process = new_tweets.filter( tw => !LAST_TWEET_LIKE.has(tw.id_str) ).map( tw => {
+		let frontMatter = {
 			date: tw.created_at,
-			layout: "like",
 			authorName: tw.user.name,
 			authorUrl: "https://twitter.com/" + tw.user.screen_name,
 			originalPost: "https://twitter.com/"+ tw.user.screen_name +"/status/" + tw.id_str,
 		}
 
-		return tw;
-	}).filter( tw => !LAST_TWEET_LIKE.has(tw.id_str) );
+		return frontMatter;
+	});
 
 	console.log(`Got ${tweets_to_process.length} new tweets.`);
-	for(let item of tweets_to_process){
-		let name = "like_" + item.id_str + ".md";
-
-		content = "---\n";
-		content += yaml.safeDump(item.frontMatter);
-		content += "---\n";
-
-		console.log("Wrote a new file");
-		await fs.promises.writeFile( path.join("content",BASE,name), content);
-	}
+	await fs.promises.writeFile(BASE, yaml.safeDump(tweets_to_process), { flag: 'a'})
 
 	LAST_TWEET_LIKE = new_tweets.map( tw => tw.id_str );
 	await fs.promises.writeFile("LAST_TWEET_LIKE", JSON.stringify(LAST_TWEET_LIKE));
