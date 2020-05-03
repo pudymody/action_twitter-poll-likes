@@ -71,20 +71,23 @@ const COUNT = process.env.INPUT_COUNT;
 		try {
 			await fs.mkdir(folder, { recursive: true });
 			await fs.writeFile(folder_index, "");
-
-			for( item of likes ){
-				let name = "like_" + item.id_str + ".md";
-				const file_path = path.join(folder, name);
-
-				content = "---\n";
-				content += yaml.safeDump(item.frontMatter);
-				content += "---\n";
-
-				await fs.writeFile( file_path, content);
-			}
 		} catch (error) {
-			throw error;
+			if( error.code != "EEXIST" ){
+				throw error;
+			}
 		}
+
+		for( item of likes ){
+			let name = "like_" + item.id_str + ".md";
+			const file_path = path.join(folder, name);
+
+			content = "---\n";
+			content += yaml.safeDump(item.frontMatter);
+			content += "---\n";
+
+			await fs.writeFile( file_path, content);
+		}
+
 	}
 
 	LAST_TWEET_LIKE = new_tweets.map( tw => tw.id_str );
