@@ -91,5 +91,5 @@ const COUNT = process.env.INPUT_COUNT;
 	}
 
 	LAST_TWEET_LIKE = new_tweets.map( tw => tw.id_str );
-	await fs.promises.writeFile("LAST_TWEET_LIKE", JSON.stringify(LAST_TWEET_LIKE));
+	await fs.writeFile("LAST_TWEET_LIKE", JSON.stringify(LAST_TWEET_LIKE));
 })();
